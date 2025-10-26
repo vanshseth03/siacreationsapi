@@ -41,22 +41,38 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-    console.error('MONGODB_URI is not defined in environment variables');
-} else {
-    mongoose.connect(MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 30000,
-        socketTimeoutMS: 45000,
-    })
-    .then(() => {
+// Global connection promise for serverless
+let cachedConnection = null;
+
+async function connectToDatabase() {
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+        return cachedConnection;
+    }
+
+    if (!MONGODB_URI) {
+        console.error('MONGODB_URI is not defined in environment variables');
+        throw new Error('MONGODB_URI not configured');
+    }
+
+    try {
+        cachedConnection = await mongoose.connect(MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            maxPoolSize: 10,
+            minPoolSize: 1,
+        });
         console.log('Connected to MongoDB');
-    })
-    .catch((err) => {
+        return cachedConnection;
+    } catch (err) {
         console.error('MongoDB connection error:', err.message);
-    });
+        throw err;
+    }
 }
+
+// Connect on startup
+connectToDatabase().catch(console.error);
 
 // API Routes
 app.use('/api/products', productRoutes);      // Product endpoints
