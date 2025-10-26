@@ -50,6 +50,17 @@ const productSchema = new mongoose.Schema({
         type: String
     }],
     
+    // Product variants
+    colors: [{
+        type: String,
+        trim: true
+    }],
+    
+    sizes: [{
+        type: String,
+        trim: true
+    }],
+    
     // Display settings
     isVisible: {
         type: Boolean,

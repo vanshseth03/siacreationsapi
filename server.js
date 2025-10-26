@@ -6,6 +6,14 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 
+// Import Routes at the top
+import productRoutes from './routes/products.js';
+import categoryRoutes from './routes/categories.js';
+import orderRoutes from './routes/orders.js';
+import carouselRoutes from './routes/carousel.js';
+import statsRoutes from './routes/stats.js';
+import uploadRoutes from './routes/upload.js';
+
 dotenv.config();
 
 const app = express();
@@ -30,43 +38,24 @@ app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // MongoDB Connection
-// You need to add MONGODB_URI in .env file
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-    console.error('❌ MONGODB_URI is not defined in environment variables!');
-    console.log('📝 Please add MONGODB_URI to your Vercel environment variables.');
+    console.error('MONGODB_URI is not defined in environment variables');
 } else {
-    console.log('📝 MongoDB URI found, attempting connection...');
-    console.log('🔗 Connecting to:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password in logs
-    
     mongoose.connect(MONGODB_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 30000, // Increase timeout to 30 seconds
-        socketTimeoutMS: 45000, // Socket timeout
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
     })
     .then(() => {
-        console.log('✅ Connected to MongoDB successfully');
-        console.log('📊 Database:', mongoose.connection.db.databaseName);
+        console.log('Connected to MongoDB');
     })
     .catch((err) => {
-        console.error('❌ MongoDB connection error:', err.message);
-        console.log('⚠️  Server will start but database features will not work.');
-        console.log('📝 Please verify:');
-        console.log('   1. MongoDB URI is correct in Vercel environment variables');
-        console.log('   2. MongoDB Atlas Network Access allows 0.0.0.0/0');
-        console.log('   3. Database user credentials are correct');
+        console.error('MongoDB connection error:', err.message);
     });
 }
-
-// Import Routes
-import productRoutes from './routes/products.js';
-import categoryRoutes from './routes/categories.js';
-import orderRoutes from './routes/orders.js';
-import carouselRoutes from './routes/carousel.js';
-import statsRoutes from './routes/stats.js';
-import uploadRoutes from './routes/upload.js';
 
 // API Routes
 app.use('/api/products', productRoutes);      // Product endpoints
@@ -78,10 +67,25 @@ app.use('/api/upload', uploadRoutes);          // Image upload endpoints
 
 // Root endpoint - API health check
 app.get('/', (req, res) => {
+    const mongoStatus = mongoose.connection.readyState;
+    const statusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    
     res.json({
         message: 'Welcome to Sia Creations API',
         status: 'running',
-        version: '1.0.0'
+        version: '1.0.0',
+        mongodb: {
+            status: statusMap[mongoStatus],
+            readyState: mongoStatus,
+            uri_configured: !!process.env.MONGODB_URI,
+            database: mongoose.connection.db ? mongoose.connection.db.databaseName : 'not connected'
+        },
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -95,7 +99,8 @@ app.use((req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
+    console.error('Error:', err.message);
+    
     res.status(500).json({
         success: false,
         message: 'Internal server error',
@@ -105,36 +110,8 @@ app.use((err, req, res, next) => {
 
 // Start Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📱 API endpoints available at /api`);
-    
-    // Test ImageKit connection
-    testImageKitConnection();
+    console.log(`Server running on port ${PORT}`);
 });
 
-// Test ImageKit Configuration
-async function testImageKitConnection() {
-    try {
-        const ImageKit = (await import('imagekit')).default;
-        // Check if credentials exist
-        if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
-            console.log('⚠️  ImageKit credentials not found in .env file');
-            console.log('📝 Image upload features will not work without ImageKit setup');
-            return;
-        }
-        
-        // Try to initialize ImageKit
-        const imagekit = new ImageKit({
-            publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-            privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-            urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
-        });
-        
-        console.log('✅ ImageKit configured successfully');
-        console.log(`📸 ImageKit URL: ${process.env.IMAGEKIT_URL_ENDPOINT}`);
-        
-    } catch (error) {
-        console.error('❌ ImageKit configuration error:', error.message);
-        console.log('📝 Please check IMAGEKIT credentials in .env file');
-    }
-}
+// Export for Vercel serverless
+export default app;
