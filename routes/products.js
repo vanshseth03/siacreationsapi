@@ -99,10 +99,21 @@ router.post('/', async (req, res) => {
             price,
             images,
             tags,
+            colors,
+            sizes,
+            outOfStockVariants,
+            outOfStock,
             isVisible,
             isNewArrival,
             status
         } = req.body;
+        
+        // Debug logging
+        console.log('=== RECEIVED PRODUCT DATA ===');
+        console.log('Colors received:', colors);
+        console.log('Sizes received:', sizes);
+        console.log('Full body:', req.body);
+        console.log('=============================');
         
         // Create new product
         const product = new Product({
@@ -113,10 +124,20 @@ router.post('/', async (req, res) => {
             price,
             images: images || [],
             tags: tags || [],
+            colors: colors || [],
+            sizes: sizes || [],
+            outOfStockVariants: outOfStockVariants || [],
+            outOfStock: outOfStock || false,
             isVisible: isVisible !== undefined ? isVisible : true,
             isNewArrival: isNewArrival || false,
             status: status || 'published'
         });
+        
+        // Debug: Log what we're saving
+        console.log('=== SAVING TO DATABASE ===');
+        console.log('Product colors:', product.colors);
+        console.log('Product sizes:', product.sizes);
+        console.log('=========================');
         
         // Save to database
         await product.save();
@@ -128,6 +149,7 @@ router.post('/', async (req, res) => {
         });
         
     } catch (error) {
+        console.error('Error creating product:', error);
         res.status(400).json({
             success: false,
             message: 'Error creating product',
@@ -139,6 +161,14 @@ router.post('/', async (req, res) => {
 // PUT /api/products/:id - Update product
 router.put('/:id', async (req, res) => {
     try {
+        // Debug logging
+        console.log('=== UPDATE PRODUCT ===');
+        console.log('Product ID:', req.params.id);
+        console.log('Colors in request:', req.body.colors);
+        console.log('Sizes in request:', req.body.sizes);
+        console.log('Full body:', req.body);
+        console.log('======================');
+        
         const product = await Product.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -152,6 +182,11 @@ router.put('/:id', async (req, res) => {
             });
         }
         
+        console.log('=== UPDATED PRODUCT ===');
+        console.log('Product colors:', product.colors);
+        console.log('Product sizes:', product.sizes);
+        console.log('=======================');
+        
         res.json({
             success: true,
             message: 'Product updated successfully',
@@ -159,6 +194,7 @@ router.put('/:id', async (req, res) => {
         });
         
     } catch (error) {
+        console.error('Error updating product:', error);
         res.status(400).json({
             success: false,
             message: 'Error updating product',

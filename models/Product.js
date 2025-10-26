@@ -72,6 +72,17 @@ const productSchema = new mongoose.Schema({
         default: false
     },
     
+    // Stock management
+    outOfStock: {
+        type: Boolean,
+        default: false
+    },
+    
+    outOfStockVariants: [{
+        type: String,
+        trim: true
+    }],
+    
     // Draft or published
     status: {
         type: String,
