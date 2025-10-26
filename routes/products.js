@@ -8,15 +8,6 @@ const router = express.Router();
 // GET /api/products - Get all products (with optional filters)
 router.get('/', async (req, res) => {
     try {
-        // Check if MongoDB is connected
-        if (!Product.db || Product.db.readyState !== 1) {
-            return res.status(503).json({
-                success: false,
-                message: 'Database connection not available',
-                error: 'MongoDB is not connected. Please check environment variables and network access.'
-            });
-        }
-        
         const { category, status, newArrival, homepage, visible, page, limit } = req.query;
         
         // Build query filters
