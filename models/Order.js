@@ -71,9 +71,14 @@ const orderSchema = new mongoose.Schema({
         required: true
     },
     
-    deliveryCharge: {
+    giftPackagingCharge: {
         type: Number,
         default: 0
+    },
+    
+    deliveryCharge: {
+        type: String,
+        default: 'To be confirmed'
     },
     
     totalAmount: {
